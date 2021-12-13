@@ -11,15 +11,11 @@ const Layout = () => {
 			<NavBar />
 			<Box sx={{ my: 4, flexGrow: 1 }}>
 				<Grid container spacing={3}>
-					<Grid item xs>
-						{/* <Item>xs</Item> */}
-					</Grid>
+					<Grid item xs></Grid>
 					<Grid item xs={10} sm={6}>
 						<Payroll />
 					</Grid>
-					<Grid item xs>
-						{/* <Item>xs</Item> */}
-					</Grid>
+					<Grid item xs></Grid>
 				</Grid>
 			</Box>
 		</>

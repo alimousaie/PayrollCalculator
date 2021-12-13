@@ -136,7 +136,9 @@ const Payroll = () => {
 						my: 3,
 					}}
 				>
-					<Typography sx={{ mr: 2, mb: 2 }}>Profession:</Typography>
+					<Typography sx={{ mr: 2, mb: 2 }} gutterBottom>
+						Profession: {profession}
+					</Typography>
 					<StyledToggleButtonGroup
 						size='small'
 						value={profession}
