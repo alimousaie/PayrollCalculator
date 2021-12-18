@@ -18,18 +18,18 @@ const basicTaxRate = {
 };
 
 // Extra high-income tax policies
-const extraTaxRangePolicies = {
-	part1: {
+const extraTaxRangePolicies = [
+	{
 		min: 36000,
 		max: 45000,
 		taxRate: 0.5,
 	},
-	part2: {
+	{
 		min: 45000,
 		max: Infinity,
 		taxRate: 0.7,
 	},
-};
+];
 
 /**
  * Number of years of experience:
@@ -37,15 +37,13 @@ const extraTaxRangePolicies = {
  * 4-7 years of experience gives a salary increase of 20% in addition to basic salary
  * 8-10 years of experience gives a salary increase of 40% in addition to basic salary
  * 11+ years of experience gives a salary increase of 60% in addition to basic salary
- * @param  {Number} years years of Experience
- * @return {Number}       Salary increasement rate
  */
-const getIncreaseRateByYearsOfExperience = (years) => {
-	if (years >= 11) return 0.6;
-	else if (years >= 8) return 0.4;
-	else if (years >= 4) return 0.2;
-	else return 0;
-};
+const increaseRateByYearsOfExperience = [
+	{ min: 0, max: 3, rate: 0 },
+	{ min: 4, max: 7, rate: 0.2 },
+	{ min: 8, max: 10, rate: 0.4 },
+	{ min: 11, max: Infinity, rate: 0.6 },
+];
 
 /**
  * calculate Basic salaries before tax:
@@ -56,8 +54,10 @@ const getIncreaseRateByYearsOfExperience = (years) => {
  */
 const calculateBasicSalary = (profession, experienceYears) => {
 	let salary = basicSalary[profession] || 0;
-	const salaryRaiseRate =
-		1 + getIncreaseRateByYearsOfExperience(experienceYears);
+	const experienceRate = increaseRateByYearsOfExperience.find(
+		(r) => experienceYears >= r.min && experienceYears <= r.max
+	);
+	const salaryRaiseRate = 1 + experienceRate.rate;
 	salary *= salaryRaiseRate;
 	return salary;
 };
@@ -71,7 +71,11 @@ const calculateBasicSalary = (profession, experienceYears) => {
  * @return {Number}      		Amount of tax should pay at first step
  */
 const calculateBasicTax = (salary, city, incomeYear) => {
-	let salaryPortion = salary <= 36000 ? salary : 36000;
+	const sortedExtraTaxRange = extraTaxRangePolicies.sort((s1, s2) =>
+		s1.min < s2.min ? -1 : 1
+	);
+	const minSalary = sortedExtraTaxRange[0].min;
+	let salaryPortion = salary <= minSalary ? salary : minSalary;
 	const taxRate = basicTaxRate[city][incomeYear];
 	const basicTax = salaryPortion * taxRate;
 	return basicTax;
@@ -85,9 +89,7 @@ const calculateBasicTax = (salary, city, incomeYear) => {
  * @return {Number}        Amount of extra tax
  */
 const calculateExtraTax = (salary) => {
-	let extraTax = 0;
-
-	Object.entries(extraTaxRangePolicies).forEach(([key, taxPolicy]) => {
+	const sumExtraTax = extraTaxRangePolicies.reduce((extraTax, taxPolicy) => {
 		let salaryPortion = salary;
 
 		if (salaryPortion > taxPolicy.max) {
@@ -101,25 +103,39 @@ const calculateExtraTax = (salary) => {
 		}
 
 		extraTax += salaryPortion * taxPolicy.taxRate;
-	});
+		return extraTax;
+	}, 0);
 
-	return extraTax;
+	return sumExtraTax;
 };
 
 /**
  * Calculate salary and tax deductions
  * @param  {Object} payrollParams Contains all parameters for payroll calculation
- * @return {Number}      		  Remaining salary after tax
+ * @return {Object}      		  {salary : Number, tax : Number, salaryAfterTax : Number}
  */
 export const calculatePayroll = (payrollParams) => {
-	const { experience, profession, city, incomeYear } = payrollParams;
+	const {
+		experience,
+		profession,
+		city,
+		incomeYear,
+		userSalary,
+		calculateMode,
+	} = payrollParams;
 
-	const salary = calculateBasicSalary(profession, experience);
+	let salary = 0;
+
+	if (calculateMode === 'experience') {
+		salary = calculateBasicSalary(profession, experience);
+	} else {
+		salary = userSalary;
+	}
 
 	let tax = 0;
 	tax = calculateBasicTax(salary, city, incomeYear);
 	tax += calculateExtraTax(salary);
 
 	const salaryAfterTax = salary - tax;
-	return salaryAfterTax;
+	return { salary, tax, salaryAfterTax };
 };

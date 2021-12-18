@@ -22,9 +22,11 @@ import Collapse from '@mui/material/Collapse';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import FormLabel from '@mui/material/FormLabel';
+import Switch from '@mui/material/Switch';
+
 import { styled } from '@mui/material/styles';
 import { calculatePayroll } from '../utility/calculator';
+import { Input, InputAdornment } from '@mui/material';
 
 const StyledToggleButtonGroup = styled(ToggleButtonGroup)(({ theme }) => ({
 	'& .MuiToggleButtonGroup-grouped': {
@@ -48,7 +50,13 @@ const Payroll = () => {
 	const [city, setCity] = useState('Stockholm');
 	const [incomeYear, setIncomeYear] = useState(2019);
 	const [showResult, setShowResult] = useState(false);
-	const [salary, setSalary] = useState(0);
+	const [salary, setSalary] = useState({});
+	const [calculateMode, setCalculateMode] = useState(false);
+	const [baseSalary, setBaseSalary] = useState(0);
+
+	const handleSalaryChange = (event) => {
+		setBaseSalary(event.target.value);
+	};
 
 	const handleExperienceChange = (event, newValue) => {
 		if (typeof newValue === 'number') {
@@ -70,6 +78,11 @@ const Payroll = () => {
 		setIncomeYear(event.target.value);
 		setShowResult(false);
 	};
+
+	const handleCalculateModeChange = (event) => {
+		setCalculateMode(event.target.checked);
+	};
+
 	const handleSubmit = (event) => {
 		event.preventDefault();
 		const payrollParams = {
@@ -77,10 +90,12 @@ const Payroll = () => {
 			profession,
 			city,
 			incomeYear,
+			userSalary: baseSalary,
+			calculateMode: calculateMode ? 'userInput' : 'experience',
 		};
 
-		const salaryAfterTax = calculatePayroll(payrollParams);
-		setSalary(salaryAfterTax);
+		const data = calculatePayroll(payrollParams);
+		setSalary(data);
 		setShowResult(true);
 	};
 
@@ -105,66 +120,106 @@ const Payroll = () => {
 						}
 					>
 						<AlertTitle sx={{ mb: 1 }}>Result</AlertTitle>
-						Salary after tax: <strong>{salary.toLocaleString()}</strong> SEK
+						{showResult && (
+							<span>
+								Your Salary is:{' '}
+								<strong>{salary.salary.toLocaleString()}</strong> SEK <br />
+								Tax is: <strong>{salary.tax.toLocaleString()}</strong> SEK
+								<br />
+								Salary after tax:{' '}
+								<strong>{salary.salaryAfterTax.toLocaleString()}</strong> SEK
+							</span>
+						)}
 					</Alert>
 				</Collapse>
 			</Box>
 			<Box component='form' onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
-				<Typography id='non-linear-slider' gutterBottom>
-					Years of experience: {experience}
-				</Typography>
-				<Slider
-					autoFocus
-					id='experience'
-					name='experience'
-					value={experience}
-					min={0}
-					step={1}
-					max={50}
-					onChange={handleExperienceChange}
-					valueLabelDisplay='auto'
-					aria-labelledby='non-linear-slider'
-				/>
-
-				<Box
-					fullWidth
-					sx={{
-						display: 'flex',
-						flexFlow: 'column',
-						justifyContent: 'space-around',
-						alignItems: 'flex-start',
-						my: 3,
-					}}
-				>
-					<Typography sx={{ mr: 2, mb: 2 }} gutterBottom>
-						Profession: {profession}
-					</Typography>
-					<StyledToggleButtonGroup
-						size='small'
-						value={profession}
-						exclusive
-						color='primary'
-						onChange={handleProfession}
-						aria-label='Profession'
-					>
-						<ToggleButton value='developer' aria-label='developer'>
-							<Tooltip title='Developer' arrow>
-								<CodeIcon />
-							</Tooltip>
-						</ToggleButton>
-						<ToggleButton value='teacher' aria-label='teacher'>
-							<Tooltip title='Teacher' arrow>
-								<SchoolIcon />
-							</Tooltip>
-						</ToggleButton>
-						<ToggleButton value='cashier' aria-label='cashier'>
-							<Tooltip title='Cashier' arrow>
-								<PointOfSaleIcon />
-							</Tooltip>
-						</ToggleButton>
-					</StyledToggleButtonGroup>
+				<Box component='div' sx={{ my: 2 }}>
+					<span>Calculate by: Experience</span>
+					<FormControlLabel
+						sx={{ ml: 0.5 }}
+						control={
+							<Switch
+								checked={calculateMode}
+								onChange={handleCalculateModeChange}
+								name='calculateMode'
+							/>
+						}
+						label='Salary amount'
+					/>
 				</Box>
-
+				{calculateMode && (
+					<>
+						<Typography gutterBottom>Your salary:</Typography>
+						<FormControl variant='standard' sx={{ m: 1, mt: 3, width: '100%' }}>
+							<Input
+								type='number'
+								value={baseSalary}
+								onChange={handleSalaryChange}
+								endAdornment={
+									<InputAdornment position='end'>SEK</InputAdornment>
+								}
+							/>
+						</FormControl>
+					</>
+				)}
+				{calculateMode || (
+					<>
+						<Typography id='non-linear-slider' gutterBottom>
+							Years of experience: {experience}
+						</Typography>
+						<Slider
+							autoFocus
+							id='experience'
+							name='experience'
+							value={experience}
+							min={0}
+							step={1}
+							max={50}
+							onChange={handleExperienceChange}
+							valueLabelDisplay='auto'
+							aria-labelledby='non-linear-slider'
+						/>
+						<Box
+							fullWidth
+							sx={{
+								display: 'flex',
+								flexFlow: 'column',
+								justifyContent: 'space-around',
+								alignItems: 'flex-start',
+								my: 3,
+							}}
+						>
+							<Typography sx={{ mr: 2, mb: 2 }} gutterBottom>
+								Profession: {profession}
+							</Typography>
+							<StyledToggleButtonGroup
+								size='small'
+								value={profession}
+								exclusive
+								color='primary'
+								onChange={handleProfession}
+								aria-label='Profession'
+							>
+								<ToggleButton value='developer' aria-label='developer'>
+									<Tooltip title='Developer' arrow>
+										<CodeIcon />
+									</Tooltip>
+								</ToggleButton>
+								<ToggleButton value='teacher' aria-label='teacher'>
+									<Tooltip title='Teacher' arrow>
+										<SchoolIcon />
+									</Tooltip>
+								</ToggleButton>
+								<ToggleButton value='cashier' aria-label='cashier'>
+									<Tooltip title='Cashier' arrow>
+										<PointOfSaleIcon />
+									</Tooltip>
+								</ToggleButton>
+							</StyledToggleButtonGroup>
+						</Box>
+					</>
+				)}
 				<FormControl variant='standard' fullWidth sx={{ my: 2 }}>
 					<Typography sx={{ mr: 2, mb: 2 }}>City:</Typography>
 					<RadioGroup
@@ -187,7 +242,6 @@ const Payroll = () => {
 						/>
 					</RadioGroup>
 				</FormControl>
-
 				<FormControl variant='standard' fullWidth sx={{ my: 2 }}>
 					<Typography sx={{ mr: 2, mb: 2 }}>Income year:</Typography>
 					<RadioGroup
@@ -202,7 +256,6 @@ const Payroll = () => {
 						<FormControlLabel value='2020' control={<Radio />} label='2020' />
 					</RadioGroup>
 				</FormControl>
-
 				<Button
 					type='submit'
 					fullWidth
